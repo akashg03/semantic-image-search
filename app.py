@@ -39,6 +39,15 @@ def _default_top_k() -> int:
     return k
 
 
+DEFAULT_IMAGE_DIR = "images"
+
+
+def _default_image_dir() -> str:
+    """Root folder to scan for images: ``IMAGE_DIR`` in env, else ``DEFAULT_IMAGE_DIR``."""
+    raw = os.environ.get("IMAGE_DIR", DEFAULT_IMAGE_DIR).strip()
+    return raw if raw else DEFAULT_IMAGE_DIR
+
+
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FAISS_PATH = DATA_DIR / "image_index.faiss"
 PATHS_PATH = DATA_DIR / "image_paths.json"
@@ -162,8 +171,9 @@ def _cli() -> None:
     p_index.add_argument(
         "--dir",
         "-d",
-        default="images",
-        help="Directory containing images (default: ./images)",
+        default=None,
+        metavar="DIR",
+        help="Directory containing images (recursive). Overrides IMAGE_DIR in .env; if omitted, uses IMAGE_DIR or ./images",
     )
 
     p_search = sub.add_parser("search", help="Search indexed images by text")
@@ -181,7 +191,8 @@ def _cli() -> None:
 
     try:
         if args.command == "index":
-            index_images(args.dir)
+            image_root = args.dir if args.dir is not None else _default_image_dir()
+            index_images(image_root)
         else:
             for path in search(args.query, top_k=args.k):
                 print(path)

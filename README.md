@@ -37,6 +37,7 @@ Edit **`.env`**:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GEMINI_API_KEY` | **Yes** | Your key from AI Studio |
+| `IMAGE_DIR` | No | Default folder to **index** (images only; **all subfolders** are scanned). Used when you run `python app.py index` **without** `--dir` (default `images`, i.e. `./images` relative to the project) |
 | `TOP_K` | No | Default number of file paths printed for `search` when you omit `-k` (default `2`) |
 | `GEMINI_EMBEDDING_MODEL` | No | Override embedding model (default `gemini-embedding-2-preview`) |
 
@@ -44,11 +45,23 @@ Never commit `.env`. **`.env.example`** is a template without secrets and **is**
 
 ### 3. Add images
 
-Put **10–20** (or more) images in a folder, e.g. `./images`, or point `index` at any directory. Supported extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`, `.bmp`.
+Put **10–20** (or more) images under a single root folder (for example `./images`). You can use **nested subfolders** (e.g. `images/singapore/`, `images/japan/`); indexing walks the tree recursively. Supported extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`, `.bmp`.
+
+Set **`IMAGE_DIR`** in `.env` if you want a default root (absolute or relative path). Example:
+
+```env
+IMAGE_DIR=/Users/you/Pictures/vacation
+```
 
 ### 4. Build the index
 
+**Precedence:** `python app.py index --dir /some/path` **overrides** `IMAGE_DIR` in `.env`. If you omit `--dir`, the app uses **`IMAGE_DIR`**, or `./images` if `IMAGE_DIR` is unset.
+
 ```bash
+# Uses IMAGE_DIR from .env, or ./images
+python app.py index
+
+# Explicit path (ignores IMAGE_DIR for this run)
 python app.py index --dir ./images
 ```
 
@@ -90,7 +103,7 @@ python app.py search "basketball" -k 5
 ## CLI reference
 
 ```text
-python app.py index  [-d DIR]     # default DIR: ./images
+python app.py index  [-d DIR]     # DIR defaults to IMAGE_DIR in .env, else ./images
 python app.py search QUERY [-k N]  # N overrides TOP_K in .env
 ```
 
@@ -111,7 +124,7 @@ python app.py search QUERY [-k N]  # N overrides TOP_K in .env
 ## Troubleshooting
 
 - **`GEMINI_API_KEY is not set`** — Create `.env` next to `app.py` with `GEMINI_API_KEY=...`.
-- **`Index missing`** — Run `python app.py index --dir /path/to/images` first.
+- **`Index missing`** — Run `python app.py index` (with `IMAGE_DIR` set or images under `./images`) or `python app.py index --dir /path/to/images` first.
 - **`TOP_K must be...`** — Set `TOP_K` to a positive integer in `.env`.
 - **Deprecation warning** from `google-generativeai` — Expected; Google recommends migrating to `google.genai` later; this MVP still uses `google-generativeai` as specified.
 
