@@ -1,0 +1,7 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+data/*.faiss
+data/image_paths.json
