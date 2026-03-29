@@ -24,6 +24,21 @@ DEFAULT_EMBEDDING_MODEL = "gemini-embedding-2-preview"
 
 EMBEDDING_MODEL = os.environ.get("GEMINI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
 
+DEFAULT_TOP_K = 2
+
+
+def _default_top_k() -> int:
+    """Number of search hits from env ``TOP_K`` (falls back to ``DEFAULT_TOP_K``)."""
+    raw = os.environ.get("TOP_K", str(DEFAULT_TOP_K)).strip()
+    try:
+        k = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"TOP_K must be an integer, got {raw!r}") from exc
+    if k < 1:
+        raise RuntimeError(f"TOP_K must be >= 1, got {k}")
+    return k
+
+
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FAISS_PATH = DATA_DIR / "image_index.faiss"
 PATHS_PATH = DATA_DIR / "image_paths.json"
@@ -107,10 +122,13 @@ def index_images(image_dir: str | Path) -> None:
     print(f"Indexed {len(kept_paths)} images → {FAISS_PATH}")
 
 
-def search(query: str, top_k: int = 2) -> list[str]:
+def search(query: str, top_k: int | None = None) -> list[str]:
     """
     Embed ``query`` and return the top ``top_k`` image paths by cosine similarity (via normalized IP).
+    If ``top_k`` is None, uses ``TOP_K`` from the environment (see ``_default_top_k``).
     """
+    if top_k is None:
+        top_k = _default_top_k()
     _configure_genai()
     if not FAISS_PATH.is_file() or not PATHS_PATH.is_file():
         raise FileNotFoundError(
@@ -152,9 +170,11 @@ def _cli() -> None:
     p_search.add_argument("query", help="Natural language query")
     p_search.add_argument(
         "-k",
+        "--top-k",
         type=int,
-        default=2,
-        help="Number of results (default: 2)",
+        default=None,
+        metavar="N",
+        help="Number of results (overrides TOP_K in .env; default from TOP_K, else 2)",
     )
 
     args = parser.parse_args()
