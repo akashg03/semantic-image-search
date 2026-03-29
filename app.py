@@ -194,7 +194,7 @@ def _cli() -> None:
             image_root = args.dir if args.dir is not None else _default_image_dir()
             index_images(image_root)
         else:
-            for path in search(args.query, top_k=args.k):
+            for path in search(args.query, top_k=args.top_k):
                 print(path)
     except (RuntimeError, ValueError, OSError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
